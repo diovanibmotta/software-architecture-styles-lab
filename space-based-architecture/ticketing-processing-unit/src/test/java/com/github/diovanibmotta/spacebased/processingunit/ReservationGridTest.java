@@ -1,7 +1,6 @@
 package com.github.diovanibmotta.spacebased.processingunit;
 
 import com.github.diovanibmotta.spacebased.contracts.EventInventory;
-import com.github.diovanibmotta.spacebased.contracts.ReservationConfirmed;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.junit.jupiter.api.AfterEach;
@@ -15,7 +14,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static com.github.diovanibmotta.spacebased.contracts.GridNames.DATA_PUMP_QUEUE;
 import static com.github.diovanibmotta.spacebased.contracts.GridNames.INVENTORY_MAP;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,7 +60,7 @@ class ReservationGridTest {
 
         assertThat(confirmed).isEqualTo(SEATS);
         assertThat(service1.availability(EVENT)).get().extracting(EventInventory::availableSeats).isEqualTo(0);
-        assertThat(unit2.<ReservationConfirmed>getQueue(DATA_PUMP_QUEUE).size()).isEqualTo(SEATS);
+        assertThat(service2.pendingPersistence()).isEqualTo(SEATS); // every sold seat has its outbox entry
     }
 
     @Test
@@ -74,7 +72,7 @@ class ReservationGridTest {
 
         assertThat(service2.availability(EVENT)).get().extracting(EventInventory::availableSeats).isEqualTo(SEATS - 3);
         assertThat(service2.reserve(EVENT, "b", 1).status()).isEqualTo(ReservationOutcome.Status.CONFIRMED);
-        assertThat(unit2.getQueue(DATA_PUMP_QUEUE).size()).isEqualTo(2); // pump backlog survived too
+        assertThat(service2.pendingPersistence()).isEqualTo(2); // outbox survived the crash together with the stock
     }
 
     @Test

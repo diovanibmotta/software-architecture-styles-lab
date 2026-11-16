@@ -29,9 +29,9 @@ flowchart LR
         PU1 <-->|replicação| PU2
         PU2 <-->|replicação| PU3
         PU1 <-->|replicação| PU3
-        Q[[Data pump<br/>IQueue]]
+        Q[[Data pump = outbox<br/>dentro do inventário]]
     end
-    PU1 & PU2 & PU3 -.->|reserva confirmada| Q
+    PU1 & PU2 & PU3 -.->|estoque-- e outbox++<br/>numa só escrita atômica| Q
     Q -.-> W[Data Writer + Data Reader]
     W --> DB[(PostgreSQL)]
     DB -.->|carga inicial| W

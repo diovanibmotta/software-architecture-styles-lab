@@ -9,7 +9,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.github.diovanibmotta.spacebased.contracts.GridNames.DATA_PUMP_QUEUE;
 import static com.github.diovanibmotta.spacebased.contracts.GridNames.INVENTORY_MAP;
 
 /**
@@ -26,8 +25,10 @@ public class ReservationService {
     }
 
     public ReservationOutcome reserve(String eventId, String customerId, int quantity) {
+        var candidate = new ReservationConfirmed(UUID.randomUUID().toString(), eventId, customerId, quantity, Instant.now());
+        // stock decrement + outbox append are one atomic entry update; the data writer drains the outbox later
         int remaining = grid.<String, EventInventory>getMap(INVENTORY_MAP)
-                .executeOnKey(eventId, new ReserveSeatsProcessor(quantity));
+                .executeOnKey(eventId, new ReserveSeatsProcessor(candidate));
 
         if (remaining == ReserveSeatsProcessor.UNKNOWN_EVENT) {
             return ReservationOutcome.unknownEvent();
@@ -35,9 +36,13 @@ public class ReservationService {
         if (remaining == ReserveSeatsProcessor.SOLD_OUT) {
             return ReservationOutcome.soldOut();
         }
-        var confirmed = new ReservationConfirmed(UUID.randomUUID().toString(), eventId, customerId, quantity, Instant.now());
-        grid.<ReservationConfirmed>getQueue(DATA_PUMP_QUEUE).offer(confirmed); // data pump (async persistence)
-        return ReservationOutcome.confirmed(confirmed, remaining);
+        return ReservationOutcome.confirmed(candidate, remaining);
+    }
+
+    /** Reservations accepted but not yet persisted by the data writer (all events). */
+    public int pendingPersistence() {
+        return grid.<String, EventInventory>getMap(INVENTORY_MAP).values().stream()
+                .mapToInt(inv -> inv.pendingReservations().size()).sum();
     }
 
     public Optional<EventInventory> availability(String eventId) {

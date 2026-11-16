@@ -37,10 +37,12 @@ quadrantChart
 
 | Camada | O que valida | Onde |
 |--------|--------------|------|
-| **Concorrência / corretude** | 400 compradores × 100 assentos distribuídos entre 2 unidades → exatamente 100 reservas, estoque 0, 100 mensagens na pump | `ReservationGridTest#neverOversellsUnderConcurrentLoadSpreadAcrossUnits` |
-| **Tolerância a falhas** | Derrubar uma unidade preserva estoque e backlog da pump | `ReservationGridTest#survivesLossOfOneUnitWithoutLosingInventory` |
+| **Concorrência / corretude** | 400 compradores × 100 assentos distribuídos entre 2 unidades → exatamente 100 reservas, estoque 0, 100 reservas no outbox | `ReservationGridTest#neverOversellsUnderConcurrentLoadSpreadAcrossUnits` |
+| **Tolerância a falhas** | Derrubar uma unidade preserva estoque e outbox | `ReservationGridTest#survivesLossOfOneUnitWithoutLosingInventory` |
 | **Regras de borda** | Evento desconhecido e esgotado | `ReservationGridTest#rejectsUnknownEventAndSoldOut` |
-| **Persistência idempotente** | Mensagem reprocessada não decrementa duas vezes | `ReservationRepositoryTest#replayedMessageIsIgnored` |
+| **Atomicidade do outbox** | Reservar decrementa estoque e entra no outbox de uma vez; ack remove só os ids gravados | `EventInventoryTest` |
+| **Persistência idempotente** | Reserva reprocessada não decrementa duas vezes | `ReservationRepositoryTest#replayedMessageIsIgnored` |
+| **Data writer** | Drena outbox → banco → ack; replay após queda entre commit e ack não duplica | `DataPumpConsumerTest` (membro Hazelcast real + H2) |
 | **Ponta a ponta** | 1.500 compradores → 1.000×`201`, 500×`409`, banco com 1.000 reservas | `scripts/flash-sale.sh` |
 
 ```mermaid
@@ -62,8 +64,8 @@ scripts/flash-sale.sh 1500 100  # 1500 compradores, 100 em paralelo
 
 ## Validação executada na criação deste repositório
 
-- `mvn verify`: 5 testes passando (3 de grid, 2 de repositório).
-- Execução ponta a ponta local (2 unidades de processamento + data writer + banco H2): 1.200 requisições concorrentes →
+- `mvn verify`: 9 testes passando (2 de domínio, 3 de grid, 2 de repositório, 2 do data writer).
+- Execução ponta a ponta local (2 unidades de processamento + data writer + banco H2): 1.200 requisições concorrentes alternadas entre as 2 unidades →
   **1.000 × `201`, 200 × `409`**, estoque final `0`, backlog da pump `0`, **1.000 linhas** em `reservations` somando 1.000 assentos.
 - A topologia `docker compose` (3 unidades + nginx + PostgreSQL) foi escrita mas **não pôde ser executada no ambiente de criação**
   (o Docker não estava disponível). Valide-a localmente com os comandos acima.

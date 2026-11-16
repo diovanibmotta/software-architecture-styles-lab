@@ -60,7 +60,7 @@ flowchart TB
 | ↳ **Data grid** | Replica o estado entre todas as unidades; é o componente mais importante. Em cada unidade, o dado parece local. | `IMap` do Hazelcast com 2 backups síncronos |
 | ↳ **Processing grid** | Opcional. Orquestra requisições que envolvem **várias** unidades de tipos diferentes (ex.: pedido + pagamento). | **Não implementado** (não necessário aqui) |
 | ↳ **Deployment manager** | Inicia e encerra unidades de processamento conforme a carga (elasticidade). | Manual: `docker compose` / adicionar `pu-N` |
-| **Data pump** | Envia dados **assincronamente** do cache para o armazenamento durável (e o contrário). Normalmente via mensageria. | `IQueue` do Hazelcast |
+| **Data pump** | Envia dados **assincronamente** do cache para o armazenamento durável (e o contrário). Normalmente via mensageria. | *Outbox* (`pendingReservations`) dentro do próprio `EventInventory` no `IMap` — ver [D3](04-decisoes-e-tradeoffs.md#d3) |
 | **Data writer** | Consome a data pump e grava no banco. | `DataPumpConsumer` + `ReservationRepository` |
 | **Data reader** | Lê do banco e coloca no cache (partida a frio, falha total do grid). | `InventoryLoader` |
 

@@ -4,10 +4,8 @@ package com.github.diovanibmotta.spacebased.contracts;
 public final class GridNames {
 
     public static final String CLUSTER_NAME = "ticketing-grid";
-    /** Distributed map: eventId -> {@link EventInventory}. */
+    /** Distributed map: eventId -> {@link EventInventory} (stock + outbox of unpersisted reservations). */
     public static final String INVENTORY_MAP = "event-inventory";
-    /** Distributed queue: the data pump (processing units -> data writer). */
-    public static final String DATA_PUMP_QUEUE = "reservation-data-pump";
 
     private GridNames() {
     }

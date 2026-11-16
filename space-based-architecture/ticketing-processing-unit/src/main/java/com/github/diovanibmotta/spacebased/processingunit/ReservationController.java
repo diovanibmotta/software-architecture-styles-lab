@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-import static com.github.diovanibmotta.spacebased.contracts.GridNames.DATA_PUMP_QUEUE;
-
 @RestController
 class ReservationController {
 
@@ -33,6 +31,9 @@ class ReservationController {
         this.service = service;
         this.grid = grid;
         this.nodeName = nodeName;
+    }
+
+    record Availability(String eventId, String name, int totalSeats, int availableSeats) {
     }
 
     record ReserveRequest(@NotBlank String customerId, @Min(1) @Max(4) int quantity) {
@@ -54,7 +55,9 @@ class ReservationController {
     @GetMapping("/events/{eventId}/availability")
     ResponseEntity<?> availability(@PathVariable String eventId) {
         return service.availability(eventId)
-                .<ResponseEntity<?>>map(inv -> reply(HttpStatus.OK, inv))
+                // never expose the outbox (customer ids) publicly
+                .<ResponseEntity<?>>map(inv -> reply(HttpStatus.OK,
+                        new Availability(inv.eventId(), inv.name(), inv.totalSeats(), inv.availableSeats())))
                 .orElseGet(() -> reply(HttpStatus.NOT_FOUND, Map.of("error", "UNKNOWN_EVENT")));
     }
 
@@ -64,7 +67,7 @@ class ReservationController {
         return Map.of(
                 "node", nodeName,
                 "members", grid.getCluster().getMembers().stream().map(Member::getAddress).map(Object::toString).toList(),
-                "dataPumpBacklog", grid.getQueue(DATA_PUMP_QUEUE).size());
+                "dataPumpBacklog", service.pendingPersistence());
     }
 
     private <T> ResponseEntity<T> reply(HttpStatus status, T body) {

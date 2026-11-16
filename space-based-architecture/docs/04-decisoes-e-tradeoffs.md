@@ -25,21 +25,29 @@ ele usa replicação **assíncrona/eventual** e **não suporta operações atôm
 - `IMap.lock(key)` + get/put: 3 round-trips e lock distribuído sujeito a *lease*/falhas.
 - `CAS` otimista (`replace(k, old, new)`) em laço: sob contenção alta gera tempestade de retentativas.
 
-## D3 — Data pump como `IQueue` replicada
+## D3 — Data pump como *outbox* dentro do inventário {#d3}
 
-**Decisão.** Reservas confirmadas vão para uma fila distribuída com os mesmos backups do inventário.
+**Contexto.** A versão inicial publicava a reserva numa `IQueue` **depois** de decrementar o estoque. São duas operações
+independentes: se a unidade caísse entre elas, o assento ficava vendido mas a reserva nunca chegava ao banco.
+
+**Decisão.** `EventInventory` carrega `pendingReservations` (o outbox). O `ReserveSeatsProcessor` decrementa `availableSeats` e
+acrescenta a reserva **na mesma escrita da mesma entrada**. O writer lê o outbox, grava no banco e então chama
+`AcknowledgeProcessor` para remover os ids persistidos.
 
 **Consequências.**
-- ✅ Sem broker externo (Kafka/RabbitMQ) para o exemplo; a fila sobrevive à queda de unidades.
-- ⚠️ **Não é durável em disco.** Se **todos** os membros caírem com backlog, as reservas pendentes se perdem — enquanto o banco ainda não recebeu. O estoque no banco ficará *maior* que o real (ingressos "voltam" a ser vendáveis após recarga).
-- 🔧 Evolução: `QueueStore` do Hazelcast (persistência), ou trocar por Kafka/RabbitMQ com *publisher confirms*, ou **Transactional Outbox** no próprio grid.
+- ✅ **Atomicidade**: vender o assento e registrar a reserva para persistência são uma operação só, replicada de forma síncrona aos backups.
+- ✅ Sem broker externo e sem janela entre "vendi" e "vou persistir".
+- ✅ O backlog sobrevive à queda de até `backups` unidades, como o estoque.
+- ⚠️ **Ainda é memória**: se **todos** os membros caírem com outbox não drenado, essas reservas se perdem e, ao recarregar do banco, esses assentos voltam a ficar vendáveis.
+- ⚠️ A entrada cresce com o backlog (valor é regravado/serializado a cada reserva): custo O(backlog) por escrita. Aceitável enquanto o writer acompanha; sob backlog enorme, migrar para chaves de outbox separadas na mesma partição (`PartitionAware`) ou um log externo.
+- 🔧 Durabilidade em disco: Hazelcast Persistence (Enterprise), `MapStore` *write-through* (mais lento: banco no caminho crítico) ou publicar em Kafka com confirmação.
 
 ## D4 — Entrega *at-least-once* + escrita idempotente
 
-**Decisão.** `peek → gravar → poll`, e `INSERT` com PK = `reservationId`.
+**Decisão.** Ler outbox → gravar → `ack` por id, e `INSERT` com PK = `reservationId`.
 
 **Por quê.** *Exactly-once* distribuído é inviável de forma simples; *at-least-once* + idempotência dá o mesmo efeito prático.
-**Limite.** Um único writer consome em ordem; vários writers exigiriam coordenação (a idempotência ainda evita duplicidade, mas haveria trabalho repetido).
+**Limite.** Um único writer por vez é o cenário testado; vários writers repetiriam trabalho (a idempotência ainda evita duplicidade no banco).
 
 ## D5 — Data writer é *cliente*, não membro do grid
 
@@ -67,16 +75,27 @@ Um evento = uma chave. Para eventos gigantes, divida em *shards* de estoque (`ev
 Fora de escopo: o modelo é "reserva confirmada = ingresso vendido". Um sistema real teria **reserva com TTL**
 (`IMap.put(..., ttl)`) e etapa de pagamento (candidato a *processing grid*/saga).
 
+## D9 — Spring Data: onde cabe
+
+O estilo não proíbe Spring Data; o que importa é **onde** ele roda.
+
+| Onde | Viável? | Observação |
+|------|:-------:|------------|
+| Data writer / data reader (acesso ao banco) | ✅ | Trocar `ReservationRepository` por Spring Data JPA/JDBC sem mudar a arquitetura. Aqui usamos `JdbcClient` por simplicidade |
+| Processing unit sobre o **grid** (`spring-data-hazelcast`, Ignite) | ⚠️ | Útil para dados pouco disputados (consultas, cadastros). `save`/`findById` são ler-e-gravar: operações atômicas como o estoque continuam exigindo `EntryProcessor`. Verifique a manutenção do projeto na sua versão |
+| Processing unit sobre o **banco** (JPA no caminho da requisição) | ❌ | Recoloca o banco no caminho crítico e anula o ganho do estilo |
+| `MapStore` do Hazelcast (write-behind/through) implementado com Spring Data | ✅ | Alternativa nativa ao outbox: o grid persiste sozinho, com menos controle sobre retry e idempotência |
+
 ## Limitações conhecidas (resumo)
 
 | Limitação | Impacto | Mitigação |
 |-----------|---------|-----------|
-| Data pump sem persistência em disco | Perda de reservas pendentes se todo o grid cair | `QueueStore` / Kafka (D3) |
+| Outbox só em memória (replicada) | Perda de reservas pendentes se **todo** o grid cair | Persistência do grid / Kafka (D3) |
 | Partição de rede (*split-brain*) | Dois sub-clusters podem vender o mesmo assento | Hazelcast *split-brain protection* com quórum / CP Subsystem (consistência forte, menor throughput) |
 | Hot key | Teto de throughput por evento | Shards de inventário (D7) |
 | Discovery estático | Elasticidade manual | Orquestrador + discovery dinâmico (D6) |
 | Sem autenticação, rate limit, anti-bot | Aberto a abuso | Gateway/WAF, filas virtuais (sala de espera) |
-| Sem idempotência na API de reserva | Retentativa do cliente gera 2 reservas | Header `Idempotency-Key` guardado em `IMap` com TTL |
+| Sem idempotência na API de reserva | Se a resposta se perde após a reserva gravada, a retentativa do cliente gera 2 reservas | Header `Idempotency-Key` guardado em `IMap` com TTL |
 | Sem *processing grid* | Fluxos multi-unidade não orquestrados | Saga/orquestrador quando houver pagamento |
 | JVM + `--add-opens` | Hazelcast exige flags no JDK 17+ | Já aplicadas no `Dockerfile` e no Surefire |
 

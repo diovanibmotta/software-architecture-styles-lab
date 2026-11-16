@@ -1,6 +1,7 @@
 package com.github.diovanibmotta.spacebased.processingunit;
 
 import com.github.diovanibmotta.spacebased.contracts.EventInventory;
+import com.github.diovanibmotta.spacebased.contracts.ReservationConfirmed;
 import com.hazelcast.map.EntryProcessor;
 
 import java.io.Serial;
@@ -20,10 +21,10 @@ public class ReserveSeatsProcessor implements EntryProcessor<String, EventInvent
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private final int quantity;
+    private final ReservationConfirmed reservation;
 
-    public ReserveSeatsProcessor(int quantity) {
-        this.quantity = quantity;
+    public ReserveSeatsProcessor(ReservationConfirmed reservation) {
+        this.reservation = reservation;
     }
 
     @Override
@@ -32,11 +33,12 @@ public class ReserveSeatsProcessor implements EntryProcessor<String, EventInvent
         if (inventory == null) {
             return UNKNOWN_EVENT;
         }
-        if (inventory.availableSeats() < quantity) {
+        if (inventory.availableSeats() < reservation.quantity()) {
             return SOLD_OUT;
         }
-        int remaining = inventory.availableSeats() - quantity;
-        entry.setValue(inventory.withAvailableSeats(remaining));
-        return remaining;
+        // seats-- and outbox append in ONE entry write: atomic and replicated to the backups together
+        EventInventory updated = inventory.withReservation(reservation);
+        entry.setValue(updated);
+        return updated.availableSeats();
     }
 }

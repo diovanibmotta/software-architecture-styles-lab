@@ -7,7 +7,6 @@ import com.hazelcast.config.TcpIpConfig;
 import java.util.List;
 
 import static com.github.diovanibmotta.spacebased.contracts.GridNames.CLUSTER_NAME;
-import static com.github.diovanibmotta.spacebased.contracts.GridNames.DATA_PUMP_QUEUE;
 import static com.github.diovanibmotta.spacebased.contracts.GridNames.INVENTORY_MAP;
 
 /**
@@ -35,7 +34,6 @@ public final class GridConfigFactory {
         members.forEach(tcpIp::addMember);
 
         config.getMapConfig(INVENTORY_MAP).setBackupCount(backups).setAsyncBackupCount(0);
-        config.getQueueConfig(DATA_PUMP_QUEUE).setBackupCount(backups).setAsyncBackupCount(0);
         return config;
     }
 }
