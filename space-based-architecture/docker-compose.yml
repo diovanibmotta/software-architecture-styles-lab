@@ -1,0 +1,53 @@
+# Space-based topology:
+#   gateway (nginx = messaging grid) -> 3 processing units (embedded data grid) -> data pump -> data writer -> postgres
+x-processing-unit: &processing-unit
+  build:
+    context: .
+    args:
+      MODULE: ticketing-processing-unit
+  environment: &pu-env
+    GRID_MEMBERS: pu-1:5701,pu-2:5701,pu-3:5701
+    GRID_BACKUPS: "2"        # 3 members, 2 backups => every unit holds the full inventory
+  expose: ["8080"]
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ticketing
+      POSTGRES_USER: ticketing
+      POSTGRES_PASSWORD: ticketing
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketing"]
+      interval: 3s
+      retries: 20
+    ports: ["5432:5432"]
+
+  pu-1:
+    <<: *processing-unit
+    environment: { <<: *pu-env, NODE_NAME: pu-1 }
+  pu-2:
+    <<: *processing-unit
+    environment: { <<: *pu-env, NODE_NAME: pu-2 }
+  pu-3:
+    <<: *processing-unit
+    environment: { <<: *pu-env, NODE_NAME: pu-3 }
+
+  data-writer:
+    build:
+      context: .
+      args:
+        MODULE: ticketing-data-writer
+    environment:
+      GRID_MEMBERS: pu-1:5701,pu-2:5701,pu-3:5701
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticketing
+    depends_on:
+      postgres: { condition: service_healthy }
+      pu-1: { condition: service_started }
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports: ["8080:80"]
+    depends_on: [pu-1, pu-2, pu-3]

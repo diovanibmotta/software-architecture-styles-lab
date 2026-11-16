@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+grid:
+  port: ${GRID_PORT:5701}
+  # comma separated host:port list of every processing unit (TCP/IP discovery)
+  members: ${GRID_MEMBERS:127.0.0.1:5701}
+  backups: ${GRID_BACKUPS:2}
+  node-name: ${NODE_NAME:${HOSTNAME:local}}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

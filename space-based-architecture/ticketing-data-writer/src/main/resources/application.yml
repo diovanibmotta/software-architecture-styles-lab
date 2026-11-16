@@ -1,0 +1,14 @@
+spring:
+  main:
+    web-application-type: none
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ticketing}
+    username: ${SPRING_DATASOURCE_USERNAME:ticketing}
+    password: ${SPRING_DATASOURCE_PASSWORD:ticketing}
+  sql:
+    init:
+      mode: always
+
+grid:
+  # comma separated host:port list of the processing units
+  members: ${GRID_MEMBERS:127.0.0.1:5701}
