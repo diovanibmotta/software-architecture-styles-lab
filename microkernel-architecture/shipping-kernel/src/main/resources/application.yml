@@ -1,0 +1,7 @@
+server:
+  port: 8080
+
+kernel:
+  plugins-dir: ${PLUGINS_DIR:plugins-dir}   # drop / replace / delete plug-in jars here
+  scan-interval: PT3S                      # hot-deploy poll interval
+  plugin-timeout: PT2S                     # per-plug-in budget for one quote

@@ -1,0 +1,7 @@
+# Kernel + a host folder of plug-in jars. Add/remove jars in ./plugins-dir and watch GET /plugins change.
+services:
+  kernel:
+    build: .
+    ports: ["8080:8080"]
+    volumes:
+      - ./plugins-dir:/plugins
