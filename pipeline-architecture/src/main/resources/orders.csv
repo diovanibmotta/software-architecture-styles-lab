@@ -1,0 +1,10 @@
+id,customer,country,quantity,unit_price,currency
+1001,ana,BR,2,100.00,BRL
+1002,bob,US,1,40.00,USD
+1003,carla,DE,3,10.00,EUR
+1004,dan,US,0,40.00,USD
+1005,eva,BR,1,-5.00,BRL
+1006,fred,JP,1,3000,JPY
+1007,gia,BR,abc,10.00,BRL
+1008,hugo,US,2,25.50,USD
+this,line,is,broken
