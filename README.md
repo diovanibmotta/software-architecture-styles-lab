@@ -15,7 +15,7 @@ Cada estilo vive em um **subprojeto independente**, com:
 | # | Estilo (livro) | Subprojeto | Caso de uso | Status |
 |---|----------------|------------|-------------|--------|
 | 1 | Arquitetura baseada em espaço (*Space-Based*) | [`space-based-architecture`](space-based-architecture) | Venda relâmpago de ingressos (flash sale) | ✅ Implementado |
-| 2 | Em camadas (*Layered*) | `layered-architecture` | — | ⏳ Planejado |
+| 2 | Em camadas (*Layered*) | [`layered-architecture`](layered-architecture) | Empréstimos de uma biblioteca comunitária | ✅ Implementado |
 | 3 | Pipeline (*pipes and filters*) | [`pipeline-architecture`](pipeline-architecture) | ETL de arquivo de vendas (CSV → faturamento em BRL) | ✅ Implementado |
 | 4 | Microkernel | [`microkernel-architecture`](microkernel-architecture) | Motor de cotação de frete com transportadoras como plug-ins (hot load) | ✅ Implementado |
 | 5 | Baseada em serviços (*Service-Based*) | `service-based-architecture` | — | ⏳ Planejado |
