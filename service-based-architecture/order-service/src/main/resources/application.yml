@@ -1,0 +1,11 @@
+server.port: ${PORT:8082}
+spring:
+  application.name: order-service
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:shop;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate.ddl-auto: none
+    open-in-view: false
+  sql.init.mode: ${SQL_INIT:always}

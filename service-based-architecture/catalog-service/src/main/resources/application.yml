@@ -1,0 +1,12 @@
+server.port: ${PORT:8081}
+spring:
+  application.name: catalog-service
+  datasource:
+    # Default: in-memory H2 (tests / quick local run). Docker Compose points every service at the same PostgreSQL.
+    url: ${DB_URL:jdbc:h2:mem:shop;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate.ddl-auto: none
+    open-in-view: false
+  sql.init.mode: ${SQL_INIT:always}
