@@ -1,0 +1,7 @@
+server.port: ${PORT:8100}
+spring.application.name: esb-orchestrator
+soa.endpoints:
+  customer: ${CUSTOMER_URL:http://localhost:8101}
+  inventory: ${INVENTORY_URL:http://localhost:8102}
+  billing: ${BILLING_URL:http://localhost:8103}
+  order: ${ORDER_URL:http://localhost:8104}

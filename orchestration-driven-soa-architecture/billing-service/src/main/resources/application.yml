@@ -1,0 +1,3 @@
+server.port: ${PORT:8103}
+spring.application.name: billing-service
+billing.limit-cents: ${BILLING_LIMIT_CENTS:1000000}
