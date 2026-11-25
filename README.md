@@ -19,7 +19,7 @@ Cada estilo vive em um **subprojeto independente**, com:
 | 3 | Pipeline (*pipes and filters*) | [`pipeline-architecture`](pipeline-architecture) | ETL de arquivo de vendas (CSV → faturamento em BRL) | ✅ Implementado |
 | 4 | Microkernel | [`microkernel-architecture`](microkernel-architecture) | Motor de cotação de frete com transportadoras como plug-ins (hot load) | ✅ Implementado |
 | 5 | Baseada em serviços (*Service-Based*) | [`service-based-architecture`](service-based-architecture) | Loja de eletrônicos: catálogo, pedidos e cobrança sobre um banco compartilhado | ✅ Implementado |
-| 6 | Orientada a eventos (*Event-Driven*) | `event-driven-architecture` | — | ⏳ Planejado |
+| 6 | Orientada a eventos (*Event-Driven*) | [`event-driven-architecture`](event-driven-architecture) | Processamento de pedidos: estoque, pagamento e notificação via broker (Artemis) | ✅ Implementado |
 | 7 | Orientada a serviços orquestrada (*Orchestration-Driven SOA*) | `orchestration-driven-soa-architecture` | — | ⏳ Planejado |
 | 8 | Microsserviços (*Microservices*) | `microservices-architecture` | — | ⏳ Planejado |
 

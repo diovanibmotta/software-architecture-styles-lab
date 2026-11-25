@@ -1,0 +1,45 @@
+# Event-driven topology (broker topology): 4 independent processors + ONE message broker. No service calls another.
+x-processor-env: &processor-env
+  SPRING_ARTEMIS_MODE: native
+  SPRING_ARTEMIS_BROKER_URL: tcp://artemis:61616
+  SPRING_ARTEMIS_USER: artemis
+  SPRING_ARTEMIS_PASSWORD: artemis
+  SERVER_PORT: "8080"
+
+services:
+  artemis:
+    image: apache/activemq-artemis:2.52.0
+    environment:
+      ARTEMIS_USER: artemis
+      ARTEMIS_PASSWORD: artemis
+    ports: ["8161:8161"]    # broker web console (artemis / artemis)
+
+  order-service:
+    build: { context: ., args: { MODULE: order-service } }
+    environment: *processor-env
+    ports: ["8091:8080"]
+    depends_on: [artemis]
+    restart: on-failure
+
+  inventory-service:
+    build: { context: ., args: { MODULE: inventory-service } }
+    environment:
+      <<: *processor-env
+      INVENTORY_INITIAL: "console=5,phone=100"
+    ports: ["8092:8080"]
+    depends_on: [artemis]
+    restart: on-failure
+
+  payment-service:
+    build: { context: ., args: { MODULE: payment-service } }
+    environment: *processor-env
+    ports: ["8093:8080"]
+    depends_on: [artemis]
+    restart: on-failure
+
+  notification-service:
+    build: { context: ., args: { MODULE: notification-service } }
+    environment: *processor-env
+    ports: ["8094:8080"]
+    depends_on: [artemis]
+    restart: on-failure
