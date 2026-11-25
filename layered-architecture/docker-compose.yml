@@ -1,0 +1,23 @@
+# Layered topology: one deployable (presentation + business + persistence) -> one relational database.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U library"]
+      interval: 3s
+      retries: 20
+
+  library:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/library
+      SPRING_DATASOURCE_USERNAME: library
+      SPRING_DATASOURCE_PASSWORD: library
+      TZ: America/Sao_Paulo   # due dates and fines are calendar days in the library's time zone
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8081:8080"]   # 8081 so it can run next to space-based-architecture (8080)

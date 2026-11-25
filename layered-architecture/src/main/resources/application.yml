@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: library
+  datasource:
+    # Local default: in-memory H2 speaking PostgreSQL dialect. docker-compose overrides with SPRING_DATASOURCE_URL.
+    url: jdbc:h2:mem:library;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+  sql:
+    init:
+      mode: always   # schema.sql + data.sql are idempotent
+
+library:
+  loan-days: 14
+  max-active-loans: 3
+  fine-per-day-cents: 200   # R$ 2,00 per day late
