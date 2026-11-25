@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.6</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.github.diovanibmotta.architecture</groupId>
+    <artifactId>event-driven-architecture</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>event-driven-architecture</name>
+    <description>Online order processing built as an Event-Driven Architecture (broker topology, ActiveMQ Artemis)</description>
+
+    <modules>
+        <module>event-contracts</module>
+        <module>order-service</module>
+        <module>inventory-service</module>
+        <module>payment-service</module>
+        <module>notification-service</module>
+        <module>e2e-tests</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <!-- Boot 3.5 manages 2.40, whose broker fails on JDK 24+ (Subject.getSubject removed). 2.52 runs on 21 and 25. -->
+        <artemis.version>2.52.0</artemis.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>event-contracts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
