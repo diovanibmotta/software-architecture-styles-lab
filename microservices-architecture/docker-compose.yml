@@ -1,0 +1,87 @@
+# Microservices topology: gateway -> 4 services, each with its OWN PostgreSQL (no shared database).
+# Services reach each other by service name on the compose network; only the gateway is meant to be public.
+x-service-env: &service-env
+  PORT: "8080"
+  SPRING_DATASOURCE_USERNAME: app
+  SPRING_DATASOURCE_PASSWORD: app
+
+x-postgres: &postgres
+  image: postgres:16-alpine
+  environment:
+    POSTGRES_USER: app
+    POSTGRES_PASSWORD: app
+    POSTGRES_DB: app
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U app"]
+    interval: 3s
+    retries: 20
+
+services:
+  catalog-db:
+    <<: *postgres
+
+  catalog-service:
+    build: { context: ., args: { MODULE: catalog-service } }
+    environment:
+      <<: *service-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-db:5432/app
+    ports: ["8101:8080"]    # direct access for experiments; in production only the gateway is exposed
+    depends_on:
+      catalog-db: { condition: service_healthy }
+    restart: on-failure
+
+  order-db:
+    <<: *postgres
+
+  order-service:
+    build: { context: ., args: { MODULE: order-service } }
+    environment:
+      <<: *service-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/app
+      CATALOG_URL: http://catalog-service:8080
+      PAYMENT_URL: http://payment-service:8080
+      DELIVERY_URL: http://delivery-service:8080
+    ports: ["8102:8080"]    # direct access for experiments; in production only the gateway is exposed
+    depends_on:
+      order-db: { condition: service_healthy }
+    restart: on-failure
+
+  payment-db:
+    <<: *postgres
+
+  payment-service:
+    build: { context: ., args: { MODULE: payment-service } }
+    environment:
+      <<: *service-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/app
+    ports: ["8103:8080"]    # direct access for experiments; in production only the gateway is exposed
+    depends_on:
+      payment-db: { condition: service_healthy }
+    restart: on-failure
+
+  delivery-db:
+    <<: *postgres
+
+  delivery-service:
+    build: { context: ., args: { MODULE: delivery-service } }
+    environment:
+      <<: *service-env
+      SPRING_DATASOURCE_URL: jdbc:postgresql://delivery-db:5432/app
+      ORDER_URL: http://order-service:8080
+      DELIVERY_COURIERS: "1"
+    ports: ["8104:8080"]    # direct access for experiments; in production only the gateway is exposed
+    depends_on:
+      delivery-db: { condition: service_healthy }
+    restart: on-failure
+
+  gateway:
+    build: { context: ., args: { MODULE: gateway } }
+    environment:
+      PORT: "8080"
+      CATALOG_URL: http://catalog-service:8080
+      ORDER_URL: http://order-service:8080
+      PAYMENT_URL: http://payment-service:8080
+      DELIVERY_URL: http://delivery-service:8080
+    ports: ["8100:8080"]
+    depends_on: [catalog-service, order-service, payment-service, delivery-service]
+    restart: on-failure

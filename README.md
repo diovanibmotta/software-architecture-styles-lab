@@ -21,7 +21,7 @@ Cada estilo vive em um **subprojeto independente**, com:
 | 5 | Baseada em serviços (*Service-Based*) | [`service-based-architecture`](service-based-architecture) | Loja de eletrônicos: catálogo, pedidos e cobrança sobre um banco compartilhado | ✅ Implementado |
 | 6 | Orientada a eventos (*Event-Driven*) | [`event-driven-architecture`](event-driven-architecture) | Processamento de pedidos: estoque, pagamento e notificação via broker (Artemis) | ✅ Implementado |
 | 7 | Orientada a serviços orquestrada (*Orchestration-Driven SOA*) | [`orchestration-driven-soa-architecture`](orchestration-driven-soa-architecture) | Order-to-cash corporativo: orquestrador estilo ESB coordena serviços de cliente, estoque, cobrança e pedido sobre mensagens canônicas | ✅ Implementado |
-| 8 | Microsserviços (*Microservices*) | `microservices-architecture` | — | ⏳ Planejado |
+| 8 | Microsserviços (*Microservices*) | [`microservices-architecture`](microservices-architecture) | Delivery de comida: catálogo, pedido, pagamento e entrega, cada um com seu banco, gateway e saga com compensação | ✅ Implementado |
 
 > Os nomes dos subprojetos pendentes são tentativos e podem mudar quando forem implementados.
 
