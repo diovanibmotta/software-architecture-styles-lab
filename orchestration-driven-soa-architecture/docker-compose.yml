@@ -1,0 +1,42 @@
+# Orchestration-driven SOA: ONE orchestrator (the ESB-style engine) in front of 4 passive business services.
+# Channels talk only to the orchestrator; services never call each other. Only the orchestrator knows their URLs.
+x-service: &service
+  restart: on-failure
+  environment: &service-env
+    PORT: "8080"
+
+services:
+  esb-orchestrator:
+    build: { context: ., args: { MODULE: esb-orchestrator } }
+    environment:
+      PORT: "8080"
+      CUSTOMER_URL: http://customer-service:8080
+      INVENTORY_URL: http://inventory-service:8080
+      BILLING_URL: http://billing-service:8080
+      ORDER_URL: http://order-service:8080
+    ports: ["8100:8080"]     # the only entry point the channels need
+    depends_on: [customer-service, inventory-service, billing-service, order-service]
+    restart: on-failure
+
+  customer-service:
+    <<: *service
+    build: { context: ., args: { MODULE: customer-service } }
+    ports: ["8101:8080"]
+
+  inventory-service:
+    <<: *service
+    build: { context: ., args: { MODULE: inventory-service } }
+    environment:
+      <<: *service-env
+      INVENTORY_INITIAL: "console=5,phone=100"
+    ports: ["8102:8080"]
+
+  billing-service:
+    <<: *service
+    build: { context: ., args: { MODULE: billing-service } }
+    ports: ["8103:8080"]
+
+  order-service:
+    <<: *service
+    build: { context: ., args: { MODULE: order-service } }
+    ports: ["8104:8080"]
